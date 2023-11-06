@@ -1,20 +1,20 @@
-const bodyParser = require("body-parser");
+const bodyParser = require('body-parser')
+ 
+const produto = require('./produtoRoute')
+const usuario = require('./usuariosRoute')
+const auth = require('./authRoute')
+const role = require('./role')
+const permissao = require('./permissao')
+const seguranca = require('./seguranca')
 
-const produto = require("./produtoRoute");
-const usuario = require("./usuarioRoute");
-const auth = require("./authRoute");
-const roles = require("./roleRoute");
-const permissao = require("./permissaoRoute");
-const seguranca = require("./segurancaRouter");
-
-module.exports = (app) => {
+module.exports = app => {
   app.use(
     bodyParser.json(),
     auth,
     usuario,
     produto,
-    roles,
+    role,
     permissao,
     seguranca
-  );
-};
+  )
+}

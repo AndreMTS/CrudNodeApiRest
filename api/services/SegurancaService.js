@@ -1,8 +1,7 @@
 const database = require("../models");
-const uuid = require("uuid");
 const Sequelize = require("sequelize");
 
-class SeguncaService {
+class SegurancaService {
   async cadastrarAcl(dto) {
     const usuario = await database.usuarios.findOne({
       include: [
@@ -108,4 +107,4 @@ class SeguncaService {
   }
 }
 
-module.exports = SeguncaService;
+module.exports = SegurancaService;
