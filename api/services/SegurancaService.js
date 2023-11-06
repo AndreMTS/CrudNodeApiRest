@@ -1,104 +1,111 @@
 const database = require("../models");
 const uuid = require("uuid");
+const Sequelize = require("sequelize");
 
 class SeguncaService {
   async cadastrarAcl(dto) {
-
     const usuario = await database.usuarios.findOne({
       include: [
         {
-            model: database.roles,
-            as: 'usuario_roles',
-            attributes: ['id', 'nome', 'descricao']
+          model: database.roles,
+          as: "usuario_roles",
+          attributes: ["id", "nome", "descricao"],
         },
         {
           model: database.permissoes,
-          as: 'usuario_permissoes',
-          attributes: ['id', 'nome', 'descricao']
-      }
-    ],
+          as: "usuario_permissoes",
+          attributes: ["id", "nome", "descricao"],
+        },
+      ],
       where: {
         id: dto.usuarioId,
       },
     });
-    if (usuario) {
-      throw new Error("Acl ja cadastradada");
+    if (!usuario) {
+      throw new Error("Usuario nao cadastradado");
     }
-    try {
-      const newAcel = await database.roles.create({
-        id: uuid.v4(),
-        nome: dto.nome,
-        descricao: dto.descricao,
-      });
 
-      return newAcel;
-    } catch (error) {
-      throw new Error("Erro ao cadastrar Role");
-    }
+    const rolesCadastradas = await database.roles.findAll({
+      where: {
+        id: {
+          [Sequelize.Op.in]: dto.roles,
+        },
+      },
+    });
+
+    const permissoesCadastradas = await database.permissoes.findAll({
+      where: {
+        id: {
+          [Sequelize.Op.in]: dto.permissoes,
+        },
+      },
+    });
+
+    await usuario.removeUsuario_roles(usuario.usuario_roles);
+    await usuario.removeUsuario_permissoes(usuario.usuario_permissoes);
+
+    await usuario.addUsuario_roles(rolesCadastradas);
+    await usuario.addUsuario_permissoes(permissoesCadastradas);
+
+    const novoUsuario = await database.usuarios.findOne({
+      include: [
+        {
+          model: database.roles,
+          as: "usuario_roles",
+          attributes: ["id", "nome", "descricao"],
+        },
+        {
+          model: database.permissoes,
+          as: "usuario_permissoes",
+          attributes: ["id", "nome", "descricao"],
+        },
+      ],
+      where: {
+        id: dto.usuarioId,
+      },
+    });
+
+    return novoUsuario;
   }
-  // async buscarTodosRoles() {
-  //   const roles = await database.roles.findAll();
-  //   return roles;
-  // }
-  // async buscarRolesId(id) {
-  //   const roles = await database.roles.findOne({
-  //     where: {
-  //       id: id,
-  //     },
-  //   });
+  async cadastrarPermissoesRoles(dto) {
+    const role = await database.roles.findOne({
+      include: [
+        {
+          model: database.permissoes,
+          as: "roles_das_permissoes",
+          attributes: ["id", "nome", "descricao"],
+        },
+      ],
+    });
+    if (!role) {
+      throw new Error("Role não cadastrada");
+    }
+    const permissoesCadastradas = await database.permissoes.findAll({
+      where: {
+        id: {
+          [Sequelize.Op.in]: dto.permissoes,
+        },
+      },
+    });
+    await role.removeRoles_das_permissoes(role.roles_das_permissoes);
 
-  //   if (!roles) {
-  //     throw new Error("Roles informado não cadastrado!");
-  //   }
+    await role.addRoles_das_permissoes(permissoesCadastradas);
 
-  //   return roles;
-  // }
-  // async deletarRoleId(id) {
-  //   const role = await database.roles.findOne({
-  //     where: {
-  //       id: id,
-  //     },
-  //   });
+    const novaRole = await database.roles.findOne({
+      include: [
+        {
+          model: database.permissoes,
+          as: "roles_das_permissoes",
+          attributes: ["id", "nome", "descricao"],
+        },
+      ],
+      where: {
+        id: dto.roleId,
+      },
+    });
 
-  //   if (!role) {
-  //     throw new Error("Role informado não cadastrado!");
-  //   }
-
-  //   try {
-  //     await database.roles.destroy({
-  //       where: {
-  //         id: id,
-  //       },
-  //     });
-  //   } catch (error) {
-  //     console.error("Message error: ", error.message);
-  //     throw error;
-  //   }
-  // }
-
-  // async editarRolesId(dto) {
-  //   const role = await database.roles.findOne({
-  //     where: {
-  //       id: dto.id,
-  //     },
-  //   });
-
-  //   if (!role) {
-  //     throw new Error("Role informado não cadastrado!");
-  //   }
-
-  //   try {
-  //     role.nome = dto.nome;
-  //     role.descricao = dto.descricao;
-
-  //     await role.save();
-
-  //     return await role.reload();
-  //   } catch (error) {
-  //     console.error("Message error: ", error.message);
-  //     throw error;
-  //   }
-  // }
+    return novaRole;
+  }
 }
 
 module.exports = SeguncaService;
